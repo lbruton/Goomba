@@ -73,6 +73,12 @@ def collect_file_contents(root_dir: str, extensions: Set[str], max_file_size: in
     parts = []
     file_count = 0
     
+    # Pre-calculate lowercase extensions and unique lengths for O(1) lookup.
+    # This approach maintains O(1) complexity relative to the number of extensions
+    # while preserving exact endswith functionality (supporting dots, compound exts, etc).
+    ext_set = {ext.lower() for ext in extensions}
+    ext_lengths = sorted(list(set(len(e) for e in ext_set)), reverse=True)
+
     for root, dirs, files in os.walk(root_dir):
         # Skip hidden and unwanted directories
         dirs[:] = [
@@ -87,8 +93,17 @@ def collect_file_contents(root_dir: str, extensions: Set[str], max_file_size: in
             if file.startswith((".", "_")):
                 continue
                 
-            # Check if file extension matches
-            if not any(file.lower().endswith(ext.lower()) for ext in extensions):
+            # Check if file matches any extension by checking suffixes of valid lengths
+            file_lower = file.lower()
+            file_len = len(file_lower)
+            match = False
+            for length in ext_lengths:
+                if length <= file_len:
+                    if file_lower[file_len - length:] in ext_set:
+                        match = True
+                        break
+
+            if not match:
                 continue
             
             file_path = os.path.join(root, file)
