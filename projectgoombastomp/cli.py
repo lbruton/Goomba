@@ -30,13 +30,15 @@ def build_folder_structure(root_dir: str, max_depth: int = 10) -> str:
             return
             
         try:
-            entries = sorted([
+            # Get list of entries and filter out unwanted ones and symbolic links
+            raw_entries = sorted([
                 e for e in os.listdir(path)
                 if not e.startswith((".", "._")) and e not in {
                     "node_modules", ".git", "__pycache__", ".pytest_cache",
                     ".venv", "venv", "env", "merged"
                 }
             ])
+            entries = [e for e in raw_entries if not os.path.islink(os.path.join(path, e))]
         except (PermissionError, OSError) as e:
             lines.append(f"{prefix}[Permission Denied: {e}]")
             return
@@ -94,6 +96,10 @@ def collect_file_contents(root_dir: str, extensions: Set[str], max_file_size: in
             file_path = os.path.join(root, file)
             relative_path = os.path.relpath(file_path, root_dir)
             
+            # Skip symbolic links to prevent arbitrary file read
+            if os.path.islink(file_path):
+                continue
+
             try:
                 # Check file size
                 file_size = os.path.getsize(file_path)
