@@ -11,6 +11,14 @@ import zipfile
 from pathlib import Path
 from typing import Set, List
 
+# Map file extensions to language identifiers for syntax highlighting
+LANGUAGE_MAP = {
+    '.py': 'python', '.js': 'javascript', '.ts': 'typescript',
+    '.html': 'html', '.css': 'css', '.json': 'json',
+    '.yaml': 'yaml', '.yml': 'yaml', '.xml': 'xml',
+    '.md': 'markdown', '.sh': 'bash', '.bat': 'batch'
+}
+
 
 def build_folder_structure(root_dir: str, max_depth: int = 10) -> str:
     """
@@ -107,13 +115,7 @@ def collect_file_contents(root_dir: str, extensions: Set[str], max_file_size: in
                     
                 # Detect file type for syntax highlighting
                 ext = Path(file).suffix.lower()
-                language_map = {
-                    '.py': 'python', '.js': 'javascript', '.ts': 'typescript',
-                    '.html': 'html', '.css': 'css', '.json': 'json',
-                    '.yaml': 'yaml', '.yml': 'yaml', '.xml': 'xml',
-                    '.md': 'markdown', '.sh': 'bash', '.bat': 'batch'
-                }
-                language = language_map.get(ext, 'text')
+                language = LANGUAGE_MAP.get(ext, 'text')
                 
                 parts.append(f"\n\n### {relative_path}\n```{language}\n{content}\n```")
                 file_count += 1
