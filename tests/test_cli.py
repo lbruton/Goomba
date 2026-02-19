@@ -102,10 +102,43 @@ def test_generate_markdown():
         assert "config.json" in result
 
 
+def test_symlink_skipping():
+    """Test that symbolic links are skipped in folder structure and content collection."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        test_dir = Path(temp_dir) / "test_symlinks"
+        test_dir.mkdir()
+
+        # Create a real file
+        real_file = test_dir / "real.txt"
+        real_file.write_text("Real content")
+
+        # Create a symlink to the real file
+        link_file = test_dir / "link.txt"
+        try:
+            os.symlink(str(real_file), str(link_file))
+        except OSError:
+            # Skip if system doesn't support symlinks (e.g. some Windows configs)
+            import pytest
+            pytest.skip("Symlinks not supported")
+
+        # Test folder structure
+        structure = build_folder_structure(str(test_dir))
+        assert "real.txt" in structure
+        assert "link.txt" not in structure
+
+        # Test file content collection
+        extensions = {".txt"}
+        contents = collect_file_contents(str(test_dir), extensions)
+        assert "real.txt" in contents
+        assert "Real content" in contents
+        assert "link.txt" not in contents
+
+
 if __name__ == "__main__":
     # Run tests manually if executed directly
     test_build_folder_structure()
     test_collect_file_contents()
     test_validate_directory()
     test_generate_markdown()
+    test_symlink_skipping()
     print("✅ All tests passed!")
