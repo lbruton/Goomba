@@ -70,6 +70,35 @@ def test_collect_file_contents():
         assert "script.py" not in result
 
 
+def test_collect_file_contents_max_size():
+    """Test file content collection with max size limit."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        test_dir = Path(temp_dir) / "test_size"
+        test_dir.mkdir()
+
+        # Create a small file (10 bytes)
+        small_file = test_dir / "small.txt"
+        small_file.write_text("a" * 10)
+
+        # Create a large file (20 bytes)
+        large_file = test_dir / "large.txt"
+        large_file.write_text("b" * 20)
+
+        extensions = {".txt"}
+
+        # Test with max_file_size=15
+        result = collect_file_contents(str(test_dir), extensions, max_file_size=15)
+
+        # small.txt should be included
+        assert "small.txt" in result
+        assert "aaaaaaaaaa" in result
+
+        # large.txt should be skipped with message
+        assert "large.txt" in result
+        assert "[File too large: 20 bytes - skipped]" in result
+        assert "bbbbbbbbbbbbbbbbbbbb" not in result
+
+
 def test_validate_directory():
     """Test directory validation."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -106,6 +135,7 @@ if __name__ == "__main__":
     # Run tests manually if executed directly
     test_build_folder_structure()
     test_collect_file_contents()
+    test_collect_file_contents_max_size()
     test_validate_directory()
     test_generate_markdown()
     print("✅ All tests passed!")
